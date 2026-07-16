@@ -10,6 +10,11 @@ from ttkbootstrap.constants import BOTH, LEFT, RIGHT, X, Y
 APP_TITLE = "PasswordApp"
 DEFAULT_THEME = "darkly"
 AVAILABLE_THEMES = ["darkly", "flatly", "superhero", "cosmo"]
+ACTIVITY_HOVER_TAG = "activity-hover"
+ACTIVITY_DEFAULT_TAG = "activity-default"
+ACTIVITY_HOVER_BG = "#2b3035"
+ACTIVITY_DEFAULT_BG = "#212529"
+ACTIVITY_DEFAULT_FG = "#f8f9fa"
 
 
 class PasswordAppShell(tb.Window):
@@ -181,8 +186,20 @@ class PasswordAppShell(tb.Window):
         activity = tb.Labelframe(right_panel, text="Security Activity", padding=10)
         activity.pack(fill=BOTH, expand=True)
 
-        timeline = tk.Text(activity, wrap="word", height=10)
+        timeline = tk.Text(
+            activity,
+            wrap="word",
+            height=10,
+            relief="flat",
+            borderwidth=0,
+            cursor="arrow",
+            background=ACTIVITY_DEFAULT_BG,
+            foreground=ACTIVITY_DEFAULT_FG,
+            insertbackground=ACTIVITY_DEFAULT_FG,
+        )
         timeline.pack(fill=BOTH, expand=True)
+        timeline.tag_configure(ACTIVITY_DEFAULT_TAG, background=ACTIVITY_DEFAULT_BG)
+        timeline.tag_configure(ACTIVITY_HOVER_TAG, background=ACTIVITY_HOVER_BG)
         timeline.insert(
             "1.0",
             "• Password health scan completed\n"
@@ -191,7 +208,10 @@ class PasswordAppShell(tb.Window):
             "• 2FA enrollment campaign scheduled\n"
             "\n"
             "All entries are static placeholders for future integration.",
+            ACTIVITY_DEFAULT_TAG,
         )
+        timeline.bind("<Motion>", self._on_activity_hover)
+        timeline.bind("<Leave>", self._on_activity_leave)
         timeline.configure(state="disabled")
 
         actions = tb.Labelframe(right_panel, text="Pending Actions", padding=10)
@@ -216,6 +236,23 @@ class PasswordAppShell(tb.Window):
             padx=10,
             pady=6,
         )
+
+    def _on_activity_hover(self, event: tk.Event) -> None:
+        timeline = event.widget
+        timeline.configure(state="normal")
+        timeline.tag_remove(ACTIVITY_HOVER_TAG, "1.0", "end")
+        hovered_index = timeline.index(f"@{event.x},{event.y}")
+        line_start = f"{hovered_index} linestart"
+        line_end = f"{hovered_index} lineend+1c"
+        if timeline.get(line_start, line_end).strip():
+            timeline.tag_add(ACTIVITY_HOVER_TAG, line_start, line_end)
+        timeline.configure(state="disabled")
+
+    def _on_activity_leave(self, event: tk.Event) -> None:
+        timeline = event.widget
+        timeline.configure(state="normal")
+        timeline.tag_remove(ACTIVITY_HOVER_TAG, "1.0", "end")
+        timeline.configure(state="disabled")
 
     def _on_theme_change(self, _event: tk.Event) -> None:
         selected = self.theme_var.get()
