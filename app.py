@@ -12,7 +12,6 @@ DEFAULT_THEME = "darkly"
 AVAILABLE_THEMES = ["darkly", "flatly", "superhero", "cosmo"]
 ACTIVITY_HOVER_TAG = "activity-hover"
 ACTIVITY_DEFAULT_TAG = "activity-default"
-ACTIVITY_HOVER_BG = "#2b3035"
 ACTIVITY_DEFAULT_BG = "#212529"
 ACTIVITY_DEFAULT_FG = "#f8f9fa"
 
@@ -199,7 +198,8 @@ class PasswordAppShell(tb.Window):
         )
         timeline.pack(fill=BOTH, expand=True)
         timeline.tag_configure(ACTIVITY_DEFAULT_TAG, background=ACTIVITY_DEFAULT_BG)
-        timeline.tag_configure(ACTIVITY_HOVER_TAG, background=ACTIVITY_HOVER_BG)
+        self._activity_timeline = timeline
+        self._apply_activity_hover_style()
         timeline.insert(
             "1.0",
             "• Password health scan completed\n"
@@ -254,9 +254,22 @@ class PasswordAppShell(tb.Window):
         timeline.tag_remove(ACTIVITY_HOVER_TAG, "1.0", "end")
         timeline.configure(state="disabled")
 
+    def _apply_activity_hover_style(self) -> None:
+        """Sync the activity timeline hover color with the theme's blue accent.
+
+        This keeps the "Security Activity" panel reacting the same way the
+        "Recent Credentials" table does, whose hover/focus highlight comes
+        from the ttkbootstrap theme's blue accent color.
+        """
+        timeline = self._activity_timeline
+        hover_bg = self.style.colors.info
+        hover_fg = self.style.colors.selectfg
+        timeline.tag_configure(ACTIVITY_HOVER_TAG, background=hover_bg, foreground=hover_fg)
+
     def _on_theme_change(self, _event: tk.Event) -> None:
         selected = self.theme_var.get()
         self.style.theme_use(selected)
+        self._apply_activity_hover_style()
 
 
 def main() -> None:
